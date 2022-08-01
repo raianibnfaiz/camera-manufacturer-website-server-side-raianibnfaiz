@@ -1,5 +1,6 @@
 const express = require('express');
 const { MongoClient, ServerApiVersion } = require('mongodb');
+const jwt = require('jsonwebtoken');
 const ObjectId = require('mongodb').ObjectId;
 const cors = require('cors');
 require('dotenv').config();
@@ -21,6 +22,7 @@ async function run() {
         console.log('database connected')
         const cameraPartsCollection = client.db('manufacturer_database').collection('camera_parts');
         const bookingCollection = client.db('manufacturer_database').collection('bookings');
+        const usersCollection = client.db('manufacturer_database').collection('users');
 
         app.get('/products', async (req, res) => {
             const query = {};
@@ -28,11 +30,32 @@ async function run() {
             const products = await cursor.toArray();
             res.send(products);
         })
+        app.put('/user/:email', async (req, res) => {
+            const email = req.params.email;
+            const user = req.body;
+            const filter = { email: email };
+            const options = { upsert: true };
+            const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+            const updateDoc = {
+                $set: user,
+            };
+            const result = await usersCollection.updateOne(filter, updateDoc, options);
+            res.send({ result, token });
+        })
         app.get('/product/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
             const result = await cameraPartsCollection.findOne(query);
             res.send(result);
+        })
+
+        app.get('/booking', async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email };
+            const authorization = req.headers.authorization
+            console.log('auth header', authorization);
+            const bookings = await bookingCollection.find(query).toArray();
+            res.send(bookings);
         })
 
         app.post('/booking', async (req, res) => {
