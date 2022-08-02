@@ -2,9 +2,10 @@ const express = require('express');
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const jwt = require('jsonwebtoken');
 const ObjectId = require('mongodb').ObjectId;
+
 const cors = require('cors');
 require('dotenv').config();
-
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -37,6 +38,30 @@ async function run() {
         const cameraPartsCollection = client.db('manufacturer_database').collection('camera_parts');
         const bookingCollection = client.db('manufacturer_database').collection('bookings');
         const usersCollection = client.db('manufacturer_database').collection('users');
+        const paymentCollection = client.db('manufacturer_database').collection('payments');
+
+        const verifyAdmin = async (req, res, next) => {
+            const requester = req.decoded.email;
+            const requesterAccount = await usersCollection.findOne({ email: requester });
+            if (requesterAccount.role === 'admin') {
+                next();
+            }
+            else {
+                res.status(403).send({ message: 'forbidden' });
+            }
+        }
+
+        app.post('/create-payment-intent', verifyJWT, async (req, res) => {
+            const order = req.body;
+            const price = order.price;
+            const amount = price * 100;
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ['card']
+            });
+            res.send({ clientSecret: paymentIntent.client_secret })
+        });
 
         app.get('/products', async (req, res) => {
             const query = {};
@@ -92,6 +117,12 @@ async function run() {
             const result = await cameraPartsCollection.findOne(query);
             res.send(result);
         })
+        app.get('/booking/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const order = await bookingCollection.findOne(query);
+            res.send(order);
+        })
 
         app.get('/booking', verifyJWT, async (req, res) => {
             const email = req.query.email;
@@ -112,11 +143,38 @@ async function run() {
             const result = await bookingCollection.insertOne(booking);
             res.send(result);
         })
-        app.post('/product', async (req, res) => {
+        app.put('/bookingInfo/:id', async (req, res) => {
+            console.log('route Hit');
+            const id = req.params.id;
+            const payment = req.body;
+            console.log('payment', payment);
+            const filter = { _id: ObjectId(id) };
+            const updatedDoc = {
+                $set: {
+                    paid: true,
+                    transactionId: payment.transactionId
+                }
+            }
+
+            const result = await paymentCollection.insertOne(payment);
+            const updatedBooking = await bookingCollection.updateOne(filter, updatedDoc);
+            res.send(updatedBooking);
+            console.log(result);
+            res.send('success');
+        })
+
+
+        app.post('/product', verifyAdmin, verifyJWT, async (req, res) => {
             const product = req.body;
             const result = await cameraPartsCollection.insertOne(product);
             res.send(result);
         });
+        app.delete('/product/:id', verifyJWT, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await cameraPartsCollection.deleteOne(query);
+            res.send(result);
+        })
 
     }
     finally {
