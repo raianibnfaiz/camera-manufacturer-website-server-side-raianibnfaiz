@@ -164,7 +164,7 @@ async function run() {
         })
 
 
-        app.post('/product', verifyAdmin, verifyJWT, async (req, res) => {
+        app.post('/product', verifyJWT, async (req, res) => {
             const product = req.body;
             const result = await cameraPartsCollection.insertOne(product);
             res.send(result);
