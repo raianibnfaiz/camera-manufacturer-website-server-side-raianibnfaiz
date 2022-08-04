@@ -40,6 +40,7 @@ async function run() {
         const usersCollection = client.db('manufacturer_database').collection('users');
         const paymentCollection = client.db('manufacturer_database').collection('payments');
         const reviewCollection = client.db('manufacturer_database').collection('reviews');
+        const profileInfoCollection = client.db('manufacturer_database').collection('profile');
 
         const verifyAdmin = async (req, res, next) => {
             const requester = req.decoded.email;
@@ -118,7 +119,20 @@ async function run() {
             };
             const result = await usersCollection.updateOne(filter, updateDoc, options);
             res.send({ result, token });
+
         })
+        app.put('/profile/:email', async (req, res) => {
+            const email = req.params.email;
+            const profile = req.body;
+            const filter = { email: email };
+            const updateDoc = {
+                $set: profile,
+            };
+            const result = await profileInfoCollection.updateOne(filter, updateDoc);
+            res.send(result);
+
+        })
+
         app.get('/product/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
