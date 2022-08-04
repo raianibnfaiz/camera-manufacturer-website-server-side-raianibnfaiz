@@ -70,6 +70,13 @@ async function run() {
             const products = await cursor.toArray();
             res.send(products);
         })
+        app.get('/reviews', async (req, res) => {
+            const query = {};
+            const cursor = reviewCollection.find(query);
+            const reviews = await cursor.toArray();
+            res.send(reviews);
+        })
+
         app.get('/user', verifyJWT, async (req, res) => {
             const users = await usersCollection.find().toArray();
             res.send(users);
