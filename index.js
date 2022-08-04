@@ -135,7 +135,7 @@ async function run() {
 
         })
 
-        app.get('/profile/:id', verifyJWT, async (req, res) => {
+        app.get('/profile/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
             const result = await profileInfoCollection.findOne(query);
