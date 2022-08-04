@@ -39,6 +39,7 @@ async function run() {
         const bookingCollection = client.db('manufacturer_database').collection('bookings');
         const usersCollection = client.db('manufacturer_database').collection('users');
         const paymentCollection = client.db('manufacturer_database').collection('payments');
+        const reviewCollection = client.db('manufacturer_database').collection('reviews');
 
         const verifyAdmin = async (req, res, next) => {
             const requester = req.decoded.email;
@@ -169,6 +170,13 @@ async function run() {
             const result = await cameraPartsCollection.insertOne(product);
             res.send(result);
         });
+
+        app.post('/review', verifyJWT, async (req, res) => {
+            const review = req.body;
+            const result = await reviewCollection.insertOne(review);
+            res.send(result);
+        })
+
         app.delete('/product/:id', verifyJWT, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
