@@ -125,10 +125,12 @@ async function run() {
             const email = req.params.email;
             const profile = req.body;
             const filter = { email: email };
+            const options = { upsert: true };
             const updateDoc = {
                 $set: profile,
             };
-            const result = await profileInfoCollection.updateOne(filter, updateDoc);
+            const result = await profileInfoCollection.updateOne(filter, updateDoc, options);
+            console.log(result);
             res.send(result);
 
         })
