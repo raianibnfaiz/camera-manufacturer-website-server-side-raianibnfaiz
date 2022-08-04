@@ -121,7 +121,7 @@ async function run() {
             res.send({ result, token });
 
         })
-        app.put('/profile/:email', async (req, res) => {
+        app.put('/profile/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
             const profile = req.body;
             const filter = { email: email };
