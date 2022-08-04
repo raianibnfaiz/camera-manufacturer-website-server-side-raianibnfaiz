@@ -145,6 +145,12 @@ async function run() {
             }
 
         })
+        app.get('/allBooking', verifyJWT, async (req, res) => {
+            const query = {};
+            const cursor = bookingCollection.find(query);
+            const orders = await cursor.toArray();
+            res.send(orders);
+        })
 
         app.post('/booking', async (req, res) => {
             const booking = req.body;
